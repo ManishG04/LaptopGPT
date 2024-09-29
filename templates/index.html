@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Laptop Recommendation System</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    </head>
+    <body>
+        <h1>Welcome to Laptop Recommender</h1>
+        <form id="recommendation-form">
+            <label for="budget">Budget:</label>
+            <input id="budget" name="budget" type="number" required>
+            <label for="purpose">Primary: </label> 
+            <select id="purpose" name="purpose" required>
+                <option value="">Select Purpose of use: </option>
+                <option value="gaming">Gaming</option>
+                <option value="work">Work</option>
+                <option value="study">Study</option>
+            </select>
+            <button type="Submit">Get Laptop Recommendation</button>
+        </form>
+        <div id="recommendations">
+            <script src="{{url_for('static', filename='js/main.js')}}"></script>
+        </div>
+    </body>
+</html>
