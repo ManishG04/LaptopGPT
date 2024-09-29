@@ -1,0 +1,9 @@
+Flask
+Flask-CORS
+Pandas
+NumPy
+scikit-learn
+joblib
+requests
+matplotlib
+Flask-RESTful
