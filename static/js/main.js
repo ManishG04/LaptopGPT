@@ -1,19 +1,33 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('JS is working.')
-    const form = document.getElementById('recommendation-form');
-    const recommendationsDiv = document.getElementById('recommendations');
+    const form = document.getElementById('chat-form');
+    const userInput = document.getElementById('user-input');
+    const chatBox = document.getElementById('chat-box');
 
     form.addEventListener('submit', function(e) {
         e.preventDefault();
-        const formData = new FormData(form);
-        fetch('/recommend', {
+        const message = userInput.value;
+        appendMessage(message, 'user-message');
+        userInput.value = '';
+
+        fetch('/chat', {
             method: 'POST',
-            body: formData
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ message })
         })
         .then(response => response.json())
         .then(data => {
-            recommendationsDiv.innerHTML = `<p>${data.message}</p>`;
+            appendMessage(data.response, 'bot-message');
         })
         .catch(error => console.error('Error:', error));
     });
+
+    function appendMessage(message, className) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${className}`;
+        messageDiv.textContent = message;
+        chatBox.appendChild(messageDiv);
+        chatBox.scrollTop = chatBox.scrollHeight; 
+    }
 });

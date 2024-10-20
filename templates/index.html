@@ -1,27 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Laptop Recommendation System</title>
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    </head>
-    <body>
-        <h1>Welcome to Laptop Recommender</h1>
-        <form id="recommendation-form">
-            <label for="budget">Budget:</label>
-            <input id="budget" name="budget" type="number" required>
-            <label for="purpose">Primary: </label> 
-            <select id="purpose" name="purpose" required>
-                <option value="">Select Purpose of use: </option>
-                <option value="gaming">Gaming</option>
-                <option value="work">Work</option>
-                <option value="study">Study</option>
-            </select>
-            <button type="Submit">Get Laptop Recommendation</button>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LaptopGPT</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="chat-container">
+        <h1>LaptopGPT</h1>
+        <div id="chat-box"></div>
+        <form id="chat-form">
+            <input type="text" id="user-input" placeholder="Type your question about laptops..." required>
+            <button type="submit">Send</button>
         </form>
-        <div id="recommendations">
-            <script src="{{url_for('static', filename='js/main.js')}}"></script>
-        </div>
-    </body>
+    </div>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
 </html>
