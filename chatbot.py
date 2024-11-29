@@ -89,66 +89,65 @@ def parse_user_input(user_input):
     except Exception as e:
         return {"error": f"An unexpected error occurred: {str(e)}"}
 
+def generate_context(user_message):
+    """
+    Parse the user's message and generate the context.
+    """
+    try:
+        parsed_input = parse_user_input(user_message)
+        if "error" in parsed_input:
+            return {"error": parsed_input["error"]}
+
+        recommendations = find_best_recommendation(parsed_input)
+        if "error" in recommendations:
+            return {"error": recommendations["error"]}
+
+        # Build context
+        context = {
+            "name": recommendations.get("name", "N/A"),
+            "RAM": recommendations.get("RAM (in GB)", "unknown"),
+            "Storage": recommendations.get("Storage", "unknown"),
+            "Price": recommendations.get("Price (in Indian Rupees)", "unknown"),
+            "GPU": recommendations.get("gpu name ", "unknown"),
+            "Processor": recommendations.get("Processor name", "unknown"),
+            "Screen Size": recommendations.get("Screen Size (in inch)", "unknown"),
+            "Operating System": recommendations.get("Operating System", "unknown"),
+            "User Rating": recommendations.get("user rating", "unknown"),
+        }
+
+        print("DEBUG: Generated Context:", context)
+        return context
+
+    except Exception as e:
+        print("DEBUG: Error in Context Generation:", str(e))
+        return {"error": "Failed to generate context from the input."}
+
+
 def generate_response(user_message, context):
     """
-    Generate a response for the user's request. Update context with laptop details.
+    Generate a response to the user's question based on the context.
     """
-    print("DEBUG: User message: ", user_message)
-    parsed_input = parse_user_input(user_message)
-    if "error" in parsed_input:
-        return parsed_input["error"], context
-
-    recommendations = find_best_recommendation(parsed_input)
-    if "error" in recommendations:
-        return recommendations["error"], context
-
-    # Extract recommendation details
-    context.update({
-        "name": recommendations.get("name", "N/A"),
-        "RAM": recommendations.get("RAM (in GB)", "unknown"),
-        "Storage": recommendations.get("Storage", "unknown"),
-        "Price": recommendations.get("Price (in Indian Rupees)", "unknown"),
-        "GPU": recommendations.get("gpu name ", "unknown"),
-        "Processor": recommendations.get("Processor name", "unknown"),
-        "Screen Size": recommendations.get("Screen Size (in inch)", "unknown"),
-        "Operating System": recommendations.get("Operating System", "unknown"),
-        "User Rating": recommendations.get("user rating", "unknown"),
-    })
-
-    # Build the response
-    response = (
-        f"We recommend the {context['name']}. It comes with {context['RAM']}GB RAM, "
-        f"{context['Storage']}GB SSD, and is priced around ₹{context['Price']}. "
-        f"It features the {context['Processor']} processor, {context['GPU']} GPU, and a "
-        f"{context['Screen Size']}-inch screen. The laptop has an average user rating of {context['User Rating']}."
-    )
-    print("DEBUG: Generated Response:", response)
-    return response, context
-
-
-def handle_followup_questions(user_message, context):
-    """
-    Handle follow-up questions using GPT and LangChain.
-    """
-    followup_prompt = ChatPromptTemplate.from_template(
-        """
-        You are assisting with follow-up questions based on the provided laptop context.
-
-        Context: {context}
-
-        User Question: "{user_message}"
-
-        Provide a clear and concise response to the user's question. If you need more words, extend appropriately.
-        """
-    )
-
-    chain = followup_prompt | model | output_parser
-
     try:
-        # Run the chain and return the response
+        followup_prompt = ChatPromptTemplate.from_template(
+            """
+            You are assisting with follow-up questions based on the provided laptop context.
+
+            Context: {context}
+
+            User Question: "{user_message}"
+
+            Provide a clear and concise response to the user's question. If you need more words, extend appropriately. If context is not there just respond to the User Question and ask about the laptop and tell the user to provide you with the details of which kind of laptops you want.
+            """
+        )
+
+        chain = followup_prompt | model | output_parser
+        
         response = chain.invoke({"user_message": user_message, "context": context})
-        print("DEBUG: GPT Follow-up Response:", response)
-        return response.strip()  # Return plain text response
+        print("DEBUG: GPT Response:", response)
+
+        return response.strip()
+
     except Exception as e:
-        print("DEBUG: Error in Follow-up:", str(e))
-        return "An error occurred while processing your follow-up question."
+        print("DEBUG: Error in Response Generation:", str(e))
+        return "An error occurred while generating the response."
+

@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify
-from chatbot import generate_response, handle_followup_questions
+from chatbot import generate_response, generate_context
 import markdown2
 
 app = Flask(__name__)
@@ -22,11 +22,13 @@ def chat():
         if not user_message:
             return jsonify({"response": "Message field is required."}), 400
 
-        if context:  # If context exists, process follow-up questions
-            # Pass the context and user message to the follow-up handler
-            response = handle_followup_questions(user_message, context)
-        else:  # If no context, generate the initial recommendation
-            response, context = generate_response(user_message, context)
+        if not context:  # If no context exists, create it
+            context = generate_context(user_message)
+            if "error" in context:
+                return jsonify({"response": context["error"]}), 400
+
+        # Generate a response using the existing context
+        response = generate_response(user_message, context)
 
         # Convert response to Markdown HTML
         formatted_response = markdown2.markdown(response)
@@ -35,6 +37,7 @@ def chat():
 
     except Exception as e:
         return jsonify({"response": f"An error occurred: {str(e)}"}), 500
+
 
 @app.route('/favicon.ico')
 def favicon():

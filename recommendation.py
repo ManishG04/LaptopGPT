@@ -1,4 +1,5 @@
 import pandas as pd
+from chatbot import generate_response
 
 # Load preprocessed data
 laptop_data = pd.read_csv("data/numeric.csv")
@@ -36,4 +37,4 @@ def find_best_recommendation(user_input):
     if not filtered_data.empty:
         return filtered_data.iloc[0].to_dict()
     else:
-        return {"error": "No laptops found matching your criteria."}
+        generate_response(user_input,context={})
