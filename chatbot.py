@@ -4,7 +4,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
-from recommendation import find_best_recommendation  
+from utils.recommendation import find_best_recommendation  
 # Load environment variables
 load_dotenv()
 
