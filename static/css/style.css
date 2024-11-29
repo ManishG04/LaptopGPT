@@ -27,7 +27,7 @@ body {
 /* Chat Header */
 .chat-header {
     background: #00796b; /* Teal header */
-    padding: 20px;
+    padding: 1px;
     text-align: center;
     font-size: 1.5rem;
     color: white;
