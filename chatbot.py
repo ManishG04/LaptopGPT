@@ -4,12 +4,13 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
-from utils.recommendation import find_best_recommendation  
+from recommendation import find_best_recommendation  
+from pydantic import SecretStr
 # Load environment variables
-load_dotenv()
+load_dotenv(override=True)
 
 # Initialize the OpenAI model
-api_key = os.getenv("OPENAI_API_KEY")
+api_key = SecretStr(os.getenv("OPENAI_API_KEY"))
 if not api_key:
     raise Exception("OpenAI API key not set")
 

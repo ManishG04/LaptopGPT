@@ -1,5 +1,4 @@
 import pandas as pd
-from chatbot import generate_response
 
 # Load preprocessed data
 laptop_data = pd.read_csv("data/numeric.csv")
