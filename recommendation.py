@@ -37,4 +37,4 @@ def find_best_recommendation(user_input):
     if not filtered_data.empty:
         return filtered_data.iloc[0].to_dict()
     else:
-        generate_response(user_input,context={})
+        return {"error": "No laptops found matching your criteria."}
