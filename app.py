@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify
-from chatbot import parse_user_input, generate_response, handle_followup_questions
+from chatbot import generate_response, handle_followup_questions
 import markdown2
 
 app = Flask(__name__)

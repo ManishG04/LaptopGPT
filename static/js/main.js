@@ -27,11 +27,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${className}`;
         if (className === 'bot-message') {
-            messageDiv.innerHTML = message; // Render as HTML for bot responses
+            messageDiv.innerHTML = message; // Render bot response as HTML
         } else {
-            messageDiv.textContent = message; // Keep plain text for user messages
+            messageDiv.textContent = message; // Keep user response as plain text
         }
         chatBox.appendChild(messageDiv);
-        chatBox.scrollTop = chatBox.scrollHeight; 
-    }
+    
+        // Smooth scroll to bottom
+        chatBox.scrollTo({
+            top: chatBox.scrollHeight,
+            behavior: "smooth"
+        });
+    }    
 });
