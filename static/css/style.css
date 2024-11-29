@@ -48,6 +48,28 @@ h1 {
     text-align: left;
 }
 
+/* Style Markdown elements in bot messages */
+.bot-message strong {
+    font-weight: bold;
+}
+
+.bot-message em {
+    font-style: italic;
+}
+
+.bot-message ul {
+    padding-left: 20px;
+    list-style-type: disc;
+}
+
+.bot-message p {
+    margin: 5px 0;
+}
+
+.bot-message br {
+    line-height: 1.5;
+}
+
 #chat-form {
     display: flex;
     justify-content: space-between;

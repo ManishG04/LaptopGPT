@@ -26,7 +26,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function appendMessage(message, className) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${className}`;
-        messageDiv.textContent = message;
+        if (className === 'bot-message') {
+            messageDiv.innerHTML = message; // Render as HTML for bot responses
+        } else {
+            messageDiv.textContent = message; // Keep plain text for user messages
+        }
         chatBox.appendChild(messageDiv);
         chatBox.scrollTop = chatBox.scrollHeight; 
     }
