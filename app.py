@@ -1,42 +1,45 @@
 from flask import Flask, render_template, request, jsonify
-from chatbot import generate_response, generate_context
+from chatbot import generate_response
 import markdown2
 
 app = Flask(__name__)
 
-context = {}
+STATIC_SESSION_ID = 'test-session'
 
 @app.route('/')
 def home():
     return render_template('index.html')
 
+
 @app.route('/chat', methods=['POST'])
 def chat():
+    """
+    Chat endpoint to handle user queries and respond using session state.
+    """
     try:
-        global context
-        data = request.json  # Read the JSON payload
-        if not data:
-            return jsonify({"response": "Invalid JSON. Please provide a valid message."}), 400
+        data = request.json
+        if not data or 'message' not in data:
+            return jsonify({'error': 'Invalid request. Provide a "message" field.'}), 400
 
-        user_message = data.get('message')
-        if not user_message:
-            return jsonify({"response": "Message field is required."}), 400
+        user_message = data['message']
 
-        if not context:  # If no context exists, create it
-            context = generate_context(user_message)
-            if "error" in context:
-                return jsonify({"response": context["error"]}), 400
-
-        # Generate a response using the existing context
-        response = generate_response(user_message, context)
-
-        # Convert response to Markdown HTML
+        # Generate response using the chatbot
+        response = generate_response(user_message, session_id=STATIC_SESSION_ID)
         formatted_response = markdown2.markdown(response)
-
+        
         return jsonify({"response": formatted_response})
-
     except Exception as e:
-        return jsonify({"response": f"An error occurred: {str(e)}"}), 500
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/clear-session', methods=['GET'])
+def clear_session():
+    """
+    Clear the static session memory.
+    """
+    # Simulated session clearing logic if needed
+    return jsonify({'message': f"Session '{STATIC_SESSION_ID}' cleared (mock implementation for testing)."})
+
 
 
 @app.route('/favicon.ico')
