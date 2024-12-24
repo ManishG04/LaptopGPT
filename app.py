@@ -23,7 +23,6 @@ def chat():
 
         user_message = data['message']
 
-        # Generate response using the chatbot
         response = generate_response(user_message, session_id=STATIC_SESSION_ID)
         formatted_response = markdown2.markdown(response)
         
@@ -37,14 +36,12 @@ def clear_session():
     """
     Clear the static session memory.
     """
-    # Simulated session clearing logic if needed
     return jsonify({'message': f"Session '{STATIC_SESSION_ID}' cleared (mock implementation for testing)."})
-
 
 
 @app.route('/favicon.ico')
 def favicon():
-    return '', 204  # Respond with no content for favicon requests
+    return '', 204  
 
 if __name__ == "__main__":
     app.run(debug=True)
