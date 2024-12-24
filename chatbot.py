@@ -132,7 +132,7 @@ response_rules = """
     3. If the recommendations is empty or contain null values suggest generally without too much details and ask user to elaborate their needs.
 """
 
-# Define prompt templates
+
 parse_prompt = ChatPromptTemplate.from_messages(
     [
         MessagesPlaceholder(variable_name='history'),

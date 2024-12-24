@@ -5,8 +5,8 @@ from sklearn.cluster import KMeans
 from sklearn.neighbors import NearestNeighbors
 from typing import Dict, List, Tuple
 
-# Constants for clustering
-N_CLUSTERS = 8  # Number of laptop clusters
+
+N_CLUSTERS = 8  
 FEATURE_WEIGHTS = {
     'RAM (in GB)': 0.15,
     'Screen Size (in inch)': 0.10,
@@ -18,7 +18,7 @@ FEATURE_WEIGHTS = {
 
 def prepare_clusters(df: pd.DataFrame) -> pd.DataFrame:
     """Prepare clusters using K-means clustering."""
-    # Select and normalize features for clustering
+    
     features = list(FEATURE_WEIGHTS.keys())
     scaler = MinMaxScaler()
     normalized_features = pd.DataFrame(
@@ -27,11 +27,11 @@ def prepare_clusters(df: pd.DataFrame) -> pd.DataFrame:
         index=df.index
     )
     
-    # Apply feature weights
+    
     for feature, weight in FEATURE_WEIGHTS.items():
         normalized_features[feature] *= weight
     
-    # Perform K-means clustering
+    # K-means clustering
     kmeans = KMeans(n_clusters=N_CLUSTERS, random_state=42)
     df['Cluster'] = kmeans.fit_predict(normalized_features)
     
@@ -50,30 +50,29 @@ def find_recommendations(best_match: pd.Series, candidates: pd.DataFrame, n: int
     best_cluster = best_match['Cluster']
     print(f"\nBest match from cluster {best_cluster}")
     
-    # First, get recommendations from the same cluster
+    
     same_cluster = candidates[candidates['Cluster'] == best_cluster].copy()
     
-    # Then, find nearest neighbors within the cluster
     features = list(FEATURE_WEIGHTS.keys())
     scaler = MinMaxScaler()
     
-    # Normalize features for the cluster
+
     cluster_features = pd.DataFrame(
         scaler.fit_transform(same_cluster[features]),
         columns=features,
         index=same_cluster.index
     )
     
-    # Apply weights
+    
     for feature, weight in FEATURE_WEIGHTS.items():
         cluster_features[feature] *= weight
     
-    # Find nearest neighbors within cluster
+    # Nearest neighbors within cluster
     n_neighbors = min(len(same_cluster), n + 1)
     nn_model = NearestNeighbors(n_neighbors=n_neighbors, metric='euclidean')
     nn_model.fit(cluster_features)
     
-    # Get recommendations from same cluster
+    # Recommendations from same cluster
     distances, indices = nn_model.kneighbors(
         cluster_features.loc[best_match.name].values.reshape(1, -1)
     )
@@ -81,7 +80,6 @@ def find_recommendations(best_match: pd.Series, candidates: pd.DataFrame, n: int
     recommendations = []
     seen_laptops = set()
     
-    # Add recommendations from same cluster
     for distance, idx in zip(distances[0], indices[0]):
         if idx == best_match.name or idx in seen_laptops:
             continue
@@ -94,14 +92,13 @@ def find_recommendations(best_match: pd.Series, candidates: pd.DataFrame, n: int
         recommendations.append(laptop_info)
         seen_laptops.add(idx)
     
-    # If we need more recommendations, get from other clusters
     if len(recommendations) < n:
         other_clusters = candidates[candidates['Cluster'] != best_cluster]
         for _, laptop in other_clusters.iterrows():
             if len(recommendations) >= n:
                 break
             laptop_info = format_laptop_info(laptop)
-            laptop_info['similarity_score'] = 50  # Default similarity for other clusters
+            laptop_info['similarity_score'] = 50 
             laptop_info['cluster'] = int(laptop['Cluster'])
             recommendations.append(laptop_info)
     
@@ -111,7 +108,6 @@ def find_recommendations(best_match: pd.Series, candidates: pd.DataFrame, n: int
     
     return recommendations
 
-# Initialize clusters when loading the module
 df = pd.read_csv('data/CleanedLaptopData.csv')
 df = prepare_clusters(df)
 
@@ -158,27 +154,23 @@ def filter_laptops(preferences: Dict) -> pd.DataFrame:
     """Filter laptops based on price, performance, portability, and specifications."""
     filtered = df.copy()
     
-    # Debug initial count
     print(f"\nDEBUG: Starting with {len(filtered)} laptops")
     
-    # Store original laptops before filtering for fallback
     original_filtered = filtered.copy()
     
-    # Price filter
+    # Filters
     filtered = filtered[
         (filtered['Price (in Indian Rupees)'] >= preferences['price_range']['min']) &
         (filtered['Price (in Indian Rupees)'] <= preferences['price_range']['max'])
     ]
     print(f"After price filter ({preferences['price_range']['min']}-{preferences['price_range']['max']}): {len(filtered)} laptops")
     
-    # Performance filter
     filtered = filtered[
         (filtered['Performance_Score'] >= preferences['performance_range']['min']) &
         (filtered['Performance_Score'] <= preferences['performance_range']['max'])
     ]
     print(f"After performance filter ({preferences['performance_range']['min']}-{preferences['performance_range']['max']}): {len(filtered)} laptops")
-    
-    # Portability filter
+
     filtered = filtered[
         (filtered['Portability'] >= preferences['portability_range']['min']) &
         (filtered['Portability'] <= preferences['portability_range']['max'])
@@ -186,27 +178,24 @@ def filter_laptops(preferences: Dict) -> pd.DataFrame:
     print(f"After portability filter ({preferences['portability_range']['min']}-{preferences['portability_range']['max']}): {len(filtered)} laptops")
     
     specs = preferences['specifications']
-    
-    # RAM filter (allow exact or higher)
+
     if 'RAM (in GB)' in specs:
         filtered = filtered[filtered['RAM (in GB)'] >= specs['RAM (in GB)']]
         print(f"After RAM filter (>= {specs['RAM (in GB)']}GB): {len(filtered)} laptops")
         print(f"Available RAM sizes: {sorted(filtered['RAM (in GB)'].unique())}")
-    
-    # Storage filter (allow exact or higher)
+
     if 'Storage' in specs:
         min_storage = float(specs['Storage'])
-        # Extract numeric values from storage strings
         filtered['Storage_Numeric'] = filtered['Storage'].astype(str).str.extract(r'(\d+)').astype(float)
         filtered = filtered[filtered['Storage_Numeric'] >= min_storage]
         filtered = filtered.drop('Storage_Numeric', axis=1)  # Clean up temporary column
         print(f"After storage filter (>= {min_storage}GB): {len(filtered)} laptops")
         print(f"Available storage sizes: {sorted(filtered['Storage'].unique())}")
     
-    # Screen size filter with wider tolerance (±1 inch for larger screens)
+    
     if 'Screen Size (in inch)' in specs:
         target_size = float(specs['Screen Size (in inch)'])
-        tolerance = 1.0 if target_size >= 17 else 0.5  # Wider tolerance for larger screens
+        tolerance = 1.0 if target_size >= 17 else 0.5  
         filtered = filtered[
             (filtered['Screen Size (in inch)'] >= target_size - tolerance) &
             (filtered['Screen Size (in inch)'] <= target_size + tolerance)
@@ -214,7 +203,7 @@ def filter_laptops(preferences: Dict) -> pd.DataFrame:
         print(f"After screen size filter ({target_size}\" ± {tolerance}\"): {len(filtered)} laptops")
         print(f"Available screen sizes: {sorted(filtered['Screen Size (in inch)'].unique())}")
     
-    # If no laptops match all criteria, relax screen size constraint
+    
     if filtered.empty and 'Screen Size (in inch)' in specs:
         print("\nNo exact matches found. Relaxing screen size constraint...")
         filtered = original_filtered[
@@ -232,7 +221,6 @@ def filter_laptops(preferences: Dict) -> pd.DataFrame:
             filtered = filtered[filtered['Storage_Numeric'] >= float(specs['Storage'])]
             filtered = filtered.drop('Storage_Numeric', axis=1)
     
-    # Print detailed information about remaining laptops
     if not filtered.empty:
         print("\nMatching laptops:")
         for _, laptop in filtered.iterrows():
@@ -270,7 +258,6 @@ def format_laptop_info(laptop: pd.Series) -> Dict:
         }
     except Exception as e:
         print(f"Error formatting laptop info: {e}")
-        # Return a safe default structure
         return {
             'name': 'Unknown',
             'price': 0,
