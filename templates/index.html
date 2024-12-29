@@ -1,24 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LaptopGPT</title>
+    <title>LaptopGPT Assistant</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
-    <div class="chat-container">
-        <div class="chat-header">
-            <h1><i class="fas fa-laptop"></i> LaptopGPT</h1>
-        </div>
-        <div id="chat-box"></div>
-        <form id="chat-form">
-            <input type="text" id="user-input" placeholder="Ask me about laptops..." required>
-            <button type="submit"><i class="fas fa-paper-plane"></i></button>
-        </form>
+    <div class="app-container">
+        <header class="chat-header">
+            <div class="logo">
+                <i class="fas fa-laptop"></i>
+                <h1>LaptopGPT</h1>
+            </div>
+            <p class="subtitle">Your AI Laptop Recommendation Assistant</p>
+        </header>
+
+        <main class="chat-main">
+            <div id="chat-box" class="chat-messages">
+                <div class="welcome-message">
+                    <div class="welcome-content">
+                        <h2>👋 Welcome to LaptopGPT</h2>
+                        <p>I can help you find the perfect laptop based on your needs and preferences.</p>
+                        <div class="example-prompts">
+                            <p>Try asking something like:</p>
+                            <button class="prompt-btn">"I need a laptop for college programming"</button>
+                            <button class="prompt-btn">"Looking for a gaming laptop under 1 lakh"</button>
+                            <button class="prompt-btn">"Need a lightweight laptop for work"</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <form id="chat-form" class="chat-input-container">
+                <input type="text" id="user-input" placeholder="Describe your ideal laptop..." required>
+                <button type="submit">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+        </main>
     </div>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
+
 </html>
