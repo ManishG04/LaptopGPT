@@ -1,333 +1,215 @@
 import pandas as pd
-import numpy as np
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.cluster import KMeans
-from sklearn.neighbors import NearestNeighbors
-from typing import Dict, List, Tuple
-
-
-N_CLUSTERS = 8  
-FEATURE_WEIGHTS = {
-    'RAM (in GB)': 0.15,
-    'Screen Size (in inch)': 0.10,
-    'Weight (in kg)': 0.10,
-    'Performance_Score': 0.25,
-    'Portability': 0.20,
-    'Value_Score': 0.20
-}
-
-def prepare_clusters(df: pd.DataFrame) -> pd.DataFrame:
-    """Prepare clusters using K-means clustering."""
-    
-    features = list(FEATURE_WEIGHTS.keys())
-    scaler = MinMaxScaler()
-    normalized_features = pd.DataFrame(
-        scaler.fit_transform(df[features]),
-        columns=features,
-        index=df.index
-    )
-    
-    
-    for feature, weight in FEATURE_WEIGHTS.items():
-        normalized_features[feature] *= weight
-    
-    # K-means clustering
-    kmeans = KMeans(n_clusters=N_CLUSTERS, random_state=42)
-    df['Cluster'] = kmeans.fit_predict(normalized_features)
-    
-    print(f"\nCluster distribution:")
-    for cluster in range(N_CLUSTERS):
-        cluster_size = len(df[df['Cluster'] == cluster])
-        print(f"Cluster {cluster}: {cluster_size} laptops")
-    
-    return df
-
-def find_recommendations(best_match: pd.Series, candidates: pd.DataFrame, n: int) -> List[Dict]:
-    """Find similar laptops using cluster-based KNN approach."""
-    if len(candidates) <= 1:
-        return []
-    
-    best_cluster = best_match['Cluster']
-    print(f"\nBest match from cluster {best_cluster}")
-    
-    
-    same_cluster = candidates[candidates['Cluster'] == best_cluster].copy()
-    
-    features = list(FEATURE_WEIGHTS.keys())
-    scaler = MinMaxScaler()
-    
-
-    cluster_features = pd.DataFrame(
-        scaler.fit_transform(same_cluster[features]),
-        columns=features,
-        index=same_cluster.index
-    )
-    
-    
-    for feature, weight in FEATURE_WEIGHTS.items():
-        cluster_features[feature] *= weight
-    
-    # Nearest neighbors within cluster
-    n_neighbors = min(len(same_cluster), n + 1)
-    nn_model = NearestNeighbors(n_neighbors=n_neighbors, metric='euclidean')
-    nn_model.fit(cluster_features)
-    
-    # Recommendations from same cluster
-    distances, indices = nn_model.kneighbors(
-        cluster_features.loc[best_match.name].values.reshape(1, -1)
-    )
-    
-    recommendations = []
-    seen_laptops = set()
-    
-    for distance, idx in zip(distances[0], indices[0]):
-        if idx == best_match.name or idx in seen_laptops:
-            continue
-        
-        laptop = same_cluster.iloc[idx]
-        similarity = 100 * np.exp(-distance)
-        laptop_info = format_laptop_info(laptop)
-        laptop_info['similarity_score'] = round(similarity, 1)
-        laptop_info['cluster'] = int(laptop['Cluster'])
-        recommendations.append(laptop_info)
-        seen_laptops.add(idx)
-    
-    if len(recommendations) < n:
-        other_clusters = candidates[candidates['Cluster'] != best_cluster]
-        for _, laptop in other_clusters.iterrows():
-            if len(recommendations) >= n:
-                break
-            laptop_info = format_laptop_info(laptop)
-            laptop_info['similarity_score'] = 50 
-            laptop_info['cluster'] = int(laptop['Cluster'])
-            recommendations.append(laptop_info)
-    
-    print(f"\nFound {len(recommendations)} recommendations:")
-    for rec in recommendations:
-        print(f"- {rec['name']} (Cluster {rec['cluster']}, Similarity: {rec['similarity_score']})")
-    
-    return recommendations
+from typing import Dict, List
+import json
 
 df = pd.read_csv('data/CleanedLaptopData.csv')
-df = prepare_clusters(df)
 
-
-
-PERFORMANCE_RANGES = {'BASIC': (15, 30), 'PRODUCTIVITY': (30, 45), 'CREATIVE': (45, 60), 'GAMING': (60, 100)}
-PORTABILITY_RANGES = {'DESKTOP_REPLACEMENT': (0, 30), 'ALL_PURPOSE': (30, 65), 'ULTRAPORTABLE': (65, 100)}
-VALUE_RANGES = {'BUDGET': (0, 35), 'MID_RANGE': (35, 50), 'HIGH_END': (50, 100)}
-N_CLUSTERS = 10
-WEIGHTS = {
-    'RAM (in GB)': 0.15, 'Screen Size (in inch)': 0.05, 'Weight (in kg)': 0.1,
-    'Normalized_CPU_Ranking': 0.15, 'Normalized_GPU_Benchmark': 0.15, 'Portability': 0.1,
-    'Performance_Score': 0.15, 'Value_Score': 0.1, 'user rating': 0.05
-}
-
-scaler = MinMaxScaler()
-feature_columns = WEIGHTS.keys()
-normalized_features = pd.DataFrame(
-    scaler.fit_transform(df[feature_columns]),
-    columns=feature_columns, index=df.index
-)
-normalized_features *= list(WEIGHTS.values())
-
-df['Cluster'] = KMeans(n_clusters=N_CLUSTERS, random_state=42).fit_predict(normalized_features)
-nn_model = NearestNeighbors(n_neighbors=6, metric='euclidean').fit(normalized_features.values)
-
-def validate_input(input_json: Dict) -> bool:
-    """Check required fields and validate ranges."""
-    required_fields = ['specifications', 'price_range', 'performance_range', 'portability_range']
-    for field in required_fields:
-        if field not in input_json:
-            raise ValueError(f"Missing required field: {field}")
-    for key, (min_val, max_val) in {
-        'price_range': (15990, 301990),
-        'performance_range': (0, 100),
-        'portability_range': (0, 100)
-    }.items():
-        if not (min_val <= input_json[key]['min'] <= input_json[key]['max'] <= max_val):
-            raise ValueError(f"Invalid values in {key}")
-    return True
-
-
-def filter_laptops(preferences: Dict) -> pd.DataFrame:
-    """Filter laptops based on price, performance, portability, and specifications."""
-    filtered = df.copy()
-    
-    print(f"\nDEBUG: Starting with {len(filtered)} laptops")
-    
-    original_filtered = filtered.copy()
-    
-    # Filters
-    filtered = filtered[
-        (filtered['Price (in Indian Rupees)'] >= preferences['price_range']['min']) &
-        (filtered['Price (in Indian Rupees)'] <= preferences['price_range']['max'])
-    ]
-    print(f"After price filter ({preferences['price_range']['min']}-{preferences['price_range']['max']}): {len(filtered)} laptops")
-    
-    filtered = filtered[
-        (filtered['Performance_Score'] >= preferences['performance_range']['min']) &
-        (filtered['Performance_Score'] <= preferences['performance_range']['max'])
-    ]
-    print(f"After performance filter ({preferences['performance_range']['min']}-{preferences['performance_range']['max']}): {len(filtered)} laptops")
-
-    filtered = filtered[
-        (filtered['Portability'] >= preferences['portability_range']['min']) &
-        (filtered['Portability'] <= preferences['portability_range']['max'])
-    ]
-    print(f"After portability filter ({preferences['portability_range']['min']}-{preferences['portability_range']['max']}): {len(filtered)} laptops")
-    
-    specs = preferences['specifications']
-
-    if 'RAM (in GB)' in specs:
-        filtered = filtered[filtered['RAM (in GB)'] >= specs['RAM (in GB)']]
-        print(f"After RAM filter (>= {specs['RAM (in GB)']}GB): {len(filtered)} laptops")
-        print(f"Available RAM sizes: {sorted(filtered['RAM (in GB)'].unique())}")
-
-    if 'Storage' in specs:
-        min_storage = float(specs['Storage'])
-        filtered['Storage_Numeric'] = filtered['Storage'].astype(str).str.extract(r'(\d+)').astype(float)
-        filtered = filtered[filtered['Storage_Numeric'] >= min_storage]
-        filtered = filtered.drop('Storage_Numeric', axis=1)  # Clean up temporary column
-        print(f"After storage filter (>= {min_storage}GB): {len(filtered)} laptops")
-        print(f"Available storage sizes: {sorted(filtered['Storage'].unique())}")
-    
-    
-    if 'Screen Size (in inch)' in specs:
-        target_size = float(specs['Screen Size (in inch)'])
-        tolerance = 1.0 if target_size >= 17 else 0.5  
-        filtered = filtered[
-            (filtered['Screen Size (in inch)'] >= target_size - tolerance) &
-            (filtered['Screen Size (in inch)'] <= target_size + tolerance)
-        ]
-        print(f"After screen size filter ({target_size}\" ± {tolerance}\"): {len(filtered)} laptops")
-        print(f"Available screen sizes: {sorted(filtered['Screen Size (in inch)'].unique())}")
-    
-    
-    if filtered.empty and 'Screen Size (in inch)' in specs:
-        print("\nNo exact matches found. Relaxing screen size constraint...")
-        filtered = original_filtered[
-            (original_filtered['Price (in Indian Rupees)'] >= preferences['price_range']['min']) &
-            (original_filtered['Price (in Indian Rupees)'] <= preferences['price_range']['max']) &
-            (original_filtered['Performance_Score'] >= preferences['performance_range']['min']) &
-            (original_filtered['Performance_Score'] <= preferences['performance_range']['max']) &
-            (original_filtered['Portability'] >= preferences['portability_range']['min']) &
-            (original_filtered['Portability'] <= preferences['portability_range']['max']) &
-            (original_filtered['RAM (in GB)'] >= specs.get('RAM (in GB)', 0))
-        ]
+def filter_laptops(preferences: Dict) -> Dict:
+    """Filter laptops based on preferences and return JSON formatted results."""
+    try:
+        filtered_df = df.copy()
+        print(f"\nDEBUG: Starting with {len(filtered_df)} laptops")
         
+        # 1. Essential Filters First (Price, RAM, Storage)
+        if 'price_range' in preferences:
+            filtered_df = filtered_df[
+                (filtered_df['Price (in Indian Rupees)'] >= preferences['price_range']['min']) &
+                (filtered_df['Price (in Indian Rupees)'] <= preferences['price_range']['max'])
+            ]
+            print(f"After price filter: {len(filtered_df)} laptops")
+
+        specs = preferences.get('specifications', {})
+        
+        # RAM Filter
+        if 'RAM (in GB)' in specs:
+            min_ram = float(specs['RAM (in GB)'])
+            filtered_df = filtered_df[filtered_df['RAM (in GB)'] >= min_ram]
+            print(f"After RAM filter: {len(filtered_df)} laptops")
+
+        # Storage Filter
         if 'Storage' in specs:
-            filtered['Storage_Numeric'] = filtered['Storage'].astype(str).str.extract(r'(\d+)').astype(float)
-            filtered = filtered[filtered['Storage_Numeric'] >= float(specs['Storage'])]
-            filtered = filtered.drop('Storage_Numeric', axis=1)
-    
-    if not filtered.empty:
-        print("\nMatching laptops:")
-        for _, laptop in filtered.iterrows():
-            print(
-                f"- {laptop['name']}: "
-                f"RAM: {laptop['RAM (in GB)']}GB, "
-                f"Storage: {laptop['Storage']}, "
-                f"Performance: {laptop['Performance_Score']:.1f}"
-            )
-    else:
-        print("\nNo laptops found matching the criteria.")
-    
-    return filtered
+            min_storage = float(specs['Storage'])
+            filtered_df = filtered_df[filtered_df['Storage'] >= min_storage]
+            print(f"After storage filter: {len(filtered_df)} laptops")
 
+        # 2. Check if we have enough results after essential filters
+        if len(filtered_df) < 20:
+            print("Warning: Very few results after essential filters. Relaxing constraints...")
+            return filter_laptops_with_relaxed_constraints(preferences)
 
-def format_laptop_info(laptop: pd.Series) -> Dict:
-    """Format laptop details for output."""
-    try:
-        return {
-            'name': str(laptop.get('name', 'Unknown')),
-            'price': int(laptop.get('Price (in Indian Rupees)', 0)),
-            'specifications': {
-                'RAM': float(laptop.get('RAM (in GB)', 0)),
-                'Storage': str(laptop.get('Storage', '0')),
-                'Screen Size': float(laptop.get('Screen Size (in inch)', 0)),
-                'Weight': float(laptop.get('Weight (in kg)', 0))
-            },
-            'scores': {
-                'performance': round(float(laptop.get('Performance_Score', 0)), 2),
-                'portability': round(float(laptop.get('Portability', 0)), 2),
-                'value': round(float(laptop.get('Value_Score', 0)), 2)
-            },
-            'similarity_score': 0,
-            'cluster': int(laptop.get('Cluster', 0))
-        }
+        # 3. Apply Performance and Portability filters with wider ranges
+        if 'performance_range' in preferences:
+            min_perf = max(0, preferences['performance_range']['min'] - 10)  # Relax by 10 points
+            max_perf = min(100, preferences['performance_range']['max'] + 10)
+            filtered_df = filtered_df[
+                (filtered_df['Performance_Score'] >= min_perf) &
+                (filtered_df['Performance_Score'] <= max_perf)
+            ]
+            print(f"After performance filter: {len(filtered_df)} laptops")
+
+        if 'portability_range' in preferences:
+            min_port = max(0, preferences['portability_range']['min'] - 10)  # Relax by 10 points
+            max_port = min(100, preferences['portability_range']['max'] + 10)
+            filtered_df = filtered_df[
+                (filtered_df['Portability'] >= min_port) &
+                (filtered_df['Portability'] <= max_port)
+            ]
+            print(f"After portability filter: {len(filtered_df)} laptops")
+
+        # 4. Optional Filters (Processor, GPU)
+        if 'processor_min' in specs and len(filtered_df) > 10:  # Only apply if we have enough results
+            processor_name = specs['processor_min'].lower()
+            if 'i' in processor_name or 'ryzen' in processor_name:
+                if 'i3' in processor_name:
+                    filtered_df = filtered_df[filtered_df['Processor name'].str.contains('i[3-9]', case=False, regex=True)]
+                elif 'i5' in processor_name:
+                    filtered_df = filtered_df[filtered_df['Processor name'].str.contains('i[5-9]', case=False, regex=True)]
+                elif 'i7' in processor_name:
+                    filtered_df = filtered_df[filtered_df['Processor name'].str.contains('i[7-9]', case=False, regex=True)]
+                elif 'i9' in processor_name:
+                    filtered_df = filtered_df[filtered_df['Processor name'].str.contains('i9', case=False)]
+                elif 'ryzen' in processor_name:
+                    filtered_df = filtered_df[filtered_df['Processor name'].str.contains('ryzen', case=False)]
+            print(f"After processor filter: {len(filtered_df)} laptops")
+
+        if specs.get('dedicated_graphics') and len(filtered_df) > 10:
+            filtered_df = filtered_df[filtered_df['Dedicated Graphic Memory Capacity'] > 0]
+            print(f"After GPU filter: {len(filtered_df)} laptops")
+
+        # Rest of the function remains the same...
+        return format_results(filtered_df)
+
     except Exception as e:
-        print(f"Error formatting laptop info: {e}")
+        print(f"Error in filter_laptops: {str(e)}")
         return {
-            'name': 'Unknown',
-            'price': 0,
-            'specifications': {
-                'RAM': 0,
-                'Storage': '0',
-                'Screen Size': 0,
-                'Weight': 0
-            },
-            'scores': {
-                'performance': 0,
-                'portability': 0,
-                'value': 0
-            },
-            'similarity_score': 0,
-            'cluster': 0
+            "status": "error",
+            "message": str(e),
+            "filtered_laptops": []
         }
 
-def get_recommendations(input_json: Dict, num_recommendations: int = 5) -> Dict:
-    """Get laptop recommendations based on user preferences."""
-    try:
-        validate_input(input_json)
-        filtered_laptops = filter_laptops(input_json)
+def filter_laptops_with_relaxed_constraints(preferences: Dict) -> Dict:
+    """Apply filters with relaxed constraints when initial filtering is too restrictive."""
+    relaxed_preferences = preferences.copy()
+    
+    # Relax price range by 20%
+    if 'price_range' in relaxed_preferences:
+        price_range = relaxed_preferences['price_range']
+        range_width = price_range['max'] - price_range['min']
+        price_range['min'] = max(15990, price_range['min'] - (range_width * 0.2))
+        price_range['max'] = min(301990, price_range['max'] + (range_width * 0.2))
+
+    # Relax performance and portability ranges
+    if 'performance_range' in relaxed_preferences:
+        perf_range = relaxed_preferences['performance_range']
+        perf_range['min'] = max(0, perf_range['min'] - 20)
+        perf_range['max'] = min(100, perf_range['max'] + 20)
+
+    if 'portability_range' in relaxed_preferences:
+        port_range = relaxed_preferences['portability_range']
+        port_range['min'] = max(0, port_range['min'] - 20)
+        port_range['max'] = min(100, port_range['max'] + 20)
+
+    # Remove processor requirement if present
+    if 'specifications' in relaxed_preferences:
+        specs = relaxed_preferences['specifications']
+        if 'processor_min' in specs:
+            del specs['processor_min']
+
+    print("Applying relaxed constraints...")
+    return filter_laptops(relaxed_preferences)
+
+def format_results(filtered_df: pd.DataFrame) -> Dict:
+    """Format the filtered results into the required JSON structure."""
+    results = {
+        "status": "success",
+        "total_matches": len(filtered_df),
+        "filtered_laptops": []
+    }
+    
+    seen_configs = set()
+    
+    for _, laptop in filtered_df.iterrows():
+        config_signature = (
+            laptop['Processor name'].lower(),
+            laptop['RAM (in GB)'],
+            laptop['Storage'],
+            laptop['gpu name '].strip().lower() if not pd.isna(laptop['gpu name ']) else "integrated",
+            laptop['Screen Size (in inch)']
+        )
         
-        if filtered_laptops.empty:
-            return {
-                'status': 'error',
-                'message': 'No matches found',
-                'best_match': None,
-                'similar_recommendations': []
+        if config_signature in seen_configs:
+            continue
+            
+        seen_configs.add(config_signature)
+        
+        laptop_dict = {
+            "name": laptop['name'],
+            "price": int(laptop['Price (in Indian Rupees)']),
+            "specifications": {
+                "processor": laptop['Processor name'],
+                "ram": f"{int(laptop['RAM (in GB)'])}GB",
+                "storage": f"{int(laptop['Storage'])}GB",
+                "gpu": laptop['gpu name '].strip() if not pd.isna(laptop['gpu name ']) else "Integrated Graphics",
+                "screen_size": f"{float(laptop['Screen Size (in inch)']):.1f}\"",
+                "weight": f"{float(laptop['Weight (in kg)']):.2f} kg",
+                "battery": f"{float(laptop['battery_backup']):.1f} hours"
+            },
+            "scores": {
+                "performance": float(laptop['Performance_Score']),
+                "portability": float(laptop['Portability']),
+                "value": float(laptop['Value_Score'])
             }
-
-        best_match = filtered_laptops.nlargest(1, ['user rating', 'Performance_Score']).iloc[0]
-        similar_recommendations = find_recommendations(best_match, filtered_laptops, num_recommendations - 1)
+        }
         
-        return {
-            'status': 'success',
-            'message': f'Found {len(filtered_laptops)} matching laptops',
-            'best_match': format_laptop_info(best_match),
-            'similar_recommendations': similar_recommendations
-        }
-    except Exception as e:
-        return {
-            'status': 'error',
-            'message': str(e),
-            'best_match': None,
-            'similar_recommendations': []
-        }
+        results["filtered_laptops"].append(laptop_dict)
+        
+        if len(results["filtered_laptops"]) >= 10:
+            break
+    
+    return results
 
-
-# Test input
-# input_preferences = {
-#     "specifications": {
-#         "RAM (in GB)": 8,
-#         "Storage": "512"
-#     },
-#     "price_range": {
-#         "min": 200000,
-#         "max": 301990
-#     },
-#     "performance_range": {
-#         "min": 75,  
-#         "max": 100
-#     },
-#     "portability_range": {
-#         "min": 0,  
-#         "max": 40
+# Example test case
+# if __name__ == "__main__":
+#     # Example preferences with performance and portability ranges
+#     test_preferences = {
+#         "specifications": {
+#             "RAM (in GB)": 16,
+#             "Storage": 512,
+#             "dedicated_graphics": True
+#             # processor_min is now optional
+#         },
+#         "price_range": {
+#             "min": 120000,
+#             "max": 240000
+#         },
+#         "performance_range": {
+#             "min": 0,
+#             "max": 100
+#         },
+#         "portability_range": {
+#             "min": 0,
+#             "max": 100
+#         }
 #     }
-# }
-
-# # Get recommendations
-# recommendations = get_recommendations(input_preferences)
-# print(recommendations)
+    
+#     # Get recommendations
+#     results = filter_laptops(test_preferences)
+    
+#     # Print results
+#     if results["status"] == "success":
+#         print(f"\nFound {results['total_matches']} total matches")
+#         print(f"Showing top {len(results['filtered_laptops'])} unique laptops:\n")
+        
+#         for i, laptop in enumerate(results['filtered_laptops'], 1):
+#             print(f"{i}. {laptop['name']}")
+#             print(f"   Price: ₹{laptop['price']:,}")
+#             print(f"   Specs: {laptop['specifications']['processor']}, "
+#                   f"{laptop['specifications']['ram']}, "
+#                   f"{laptop['specifications']['storage']}, "
+#                   f"{laptop['specifications']['gpu']}")
+#             print(f"   Performance Score: {laptop['scores']['performance']:.1f}")
+#             print(f"   Portability Score: {laptop['scores']['portability']:.1f}")
+#             print(f"   Value Score: {laptop['scores']['value']:.1f}")
+#             print()
+#     else:
+#         print(f"Error: {results['message']}")
