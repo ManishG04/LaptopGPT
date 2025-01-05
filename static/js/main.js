@@ -4,6 +4,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const chatBox = document.getElementById('chat-box');
     const promptButtons = document.querySelectorAll('.prompt-btn');
 
+    function createLoadingAnimation() {
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'loading';
+        for (let i = 0; i < 3; i++) {
+            const dot = document.createElement('span');
+            loadingDiv.appendChild(dot);
+        }
+        return loadingDiv;
+    }
+
     // Add click handlers for example prompt buttons
     promptButtons.forEach(button => {
         button.addEventListener('click', function () {
@@ -21,6 +31,14 @@ document.addEventListener('DOMContentLoaded', function () {
         appendMessage(message, 'user-message');
         userInput.value = '';
 
+        // Add loading animation
+        const loadingAnimation = createLoadingAnimation();
+        chatBox.appendChild(loadingAnimation);
+        chatBox.scrollTo({
+            top: chatBox.scrollHeight,
+            behavior: "smooth"
+        });
+
         fetch('/chat', {
             method: 'POST',
             headers: {
@@ -30,9 +48,16 @@ document.addEventListener('DOMContentLoaded', function () {
         })
             .then(response => response.json())
             .then(data => {
+                // Remove loading animation
+                loadingAnimation.remove();
                 appendMessage(data.response, 'bot-message');
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => {
+                // Remove loading animation and show error
+                loadingAnimation.remove();
+                console.error('Error:', error);
+                appendMessage('Sorry, something went wrong. Please try again.', 'bot-message');
+            });
     });
 
     function appendMessage(message, className) {
