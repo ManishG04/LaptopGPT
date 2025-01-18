@@ -4,7 +4,6 @@ from typing import Dict
 df = pd.read_csv('data/CleanedLaptopData.csv')
 
 def filter_laptops(preferences: Dict) -> Dict:
-    """Filter laptops based on preferences and return JSON formatted results."""
     try:
         filtered_df = df.copy()
         print(f"\nDEBUG: Starting with {len(filtered_df)} laptops")
@@ -32,7 +31,7 @@ def filter_laptops(preferences: Dict) -> Dict:
             print(f"After storage filter: {len(filtered_df)} laptops")
 
         if len(filtered_df) < 20:
-            print("Warning: Very few results after essential filters. Relaxing constraints...")
+            print("Relaxing constraints")
             return filter_laptops_with_relaxed_constraints(preferences)
 
         if 'performance_range' in preferences:
@@ -84,7 +83,6 @@ def filter_laptops(preferences: Dict) -> Dict:
         }
 
 def filter_laptops_with_relaxed_constraints(preferences: Dict) -> Dict:
-    """Apply filters with relaxed constraints when initial filtering is too restrictive."""
     relaxed_preferences = preferences.copy()
     
     if 'price_range' in relaxed_preferences:
@@ -108,11 +106,10 @@ def filter_laptops_with_relaxed_constraints(preferences: Dict) -> Dict:
         if 'processor_min' in specs:
             del specs['processor_min']
 
-    print("Applying relaxed constraints...")
+    print("Applying relaxed constraints")
     return filter_laptops(relaxed_preferences)
 
 def format_results(filtered_df: pd.DataFrame) -> Dict:
-    """Format the filtered results into the required JSON structure."""
     results = {
         "status": "success",
         "total_matches": len(filtered_df),

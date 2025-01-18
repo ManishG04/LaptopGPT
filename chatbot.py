@@ -23,9 +23,6 @@ model = ChatOpenAI(
 )
 
 def strip_backticks(code):
-    """
-    Remove backticks and code fences from a string.
-    """
     if code.startswith("```") and code.endswith("```"):
         code = code[3:]
         first_newline_index = code.find("\n")
@@ -275,9 +272,6 @@ output_parser = StrOutputParser()
 context = {}
 
 def get_by_session_id(session_id: str) -> BaseChatMessageHistory:
-    """
-    Get chat history by session ID.
-    """
     if session_id not in context:
         context[session_id] = InMemoryChatMessageHistory()
     return context[session_id]

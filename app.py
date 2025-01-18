@@ -13,9 +13,6 @@ def home():
 
 @app.route('/chat', methods=['POST'])
 def chat():
-    """
-    Chat endpoint to handle user queries and respond using session state.
-    """
     try:
         data = request.json
         if not data or 'message' not in data:
