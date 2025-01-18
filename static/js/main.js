@@ -14,10 +14,9 @@ document.addEventListener('DOMContentLoaded', function () {
         return loadingDiv;
     }
 
-    // Add click handlers for example prompt buttons
     promptButtons.forEach(button => {
         button.addEventListener('click', function () {
-            const promptText = this.textContent.replace(/['"]/g, ''); // Remove quotes
+            const promptText = this.textContent.replace(/['"]/g, ''); 
             userInput.value = promptText;
             form.dispatchEvent(new Event('submit'));
         });
@@ -26,18 +25,13 @@ document.addEventListener('DOMContentLoaded', function () {
     form.addEventListener('submit', function (e) {
         e.preventDefault();
         const message = userInput.value;
-        if (!message.trim()) return; // Prevent empty messages
+        if (!message.trim()) return; 
 
         appendMessage(message, 'user-message');
         userInput.value = '';
 
-        // Add loading animation
         const loadingAnimation = createLoadingAnimation();
         chatBox.appendChild(loadingAnimation);
-        chatBox.scrollTo({
-            top: chatBox.scrollHeight,
-            behavior: "smooth"
-        });
 
         fetch('/chat', {
             method: 'POST',
@@ -48,12 +42,10 @@ document.addEventListener('DOMContentLoaded', function () {
         })
             .then(response => response.json())
             .then(data => {
-                // Remove loading animation
                 loadingAnimation.remove();
                 appendMessage(data.response, 'bot-message');
             })
             .catch(error => {
-                // Remove loading animation and show error
                 loadingAnimation.remove();
                 console.error('Error:', error);
                 appendMessage('Sorry, something went wrong. Please try again.', 'bot-message');
@@ -70,9 +62,5 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         chatBox.appendChild(messageDiv);
 
-        chatBox.scrollTo({
-            top: chatBox.scrollHeight,
-            behavior: "smooth"
-        });
     }
 });
