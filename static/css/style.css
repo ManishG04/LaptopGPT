@@ -212,19 +212,6 @@ body {
     }
 }
 
-/* Code block styling */
-pre {
-    background: var(--input-bg);
-    border-radius: 8px;
-    padding: 1rem;
-    overflow-x: auto;
-    margin: 0.5rem 0;
-}
-
-code {
-    color: var(--text-primary);
-    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-}
 
 /* Responsive Design */
 @media (max-width: 768px) {

@@ -31,14 +31,6 @@ def chat():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/clear-session', methods=['GET'])
-def clear_session():
-    """
-    Clear the static session memory.
-    """
-    return jsonify({'message': f"Session '{STATIC_SESSION_ID}' cleared (mock implementation for testing)."})
-
-
 @app.route('/favicon.ico')
 def favicon():
     return '', 204  
