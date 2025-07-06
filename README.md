@@ -1,6 +1,12 @@
 # 💻 LaptopGPT
 
-**LaptopGPT** is a conversational laptop recommendation system that helps users find the best laptops tailored to their budget, usage, and preferences. Built using Flask and a simple web interface, it delivers intelligent, human-like recommendations — and is designed to evolve with ML and advanced chatbot integration in the future.
+**LaptopGPT** is a web-based, conversational laptop recommendation system designed to help users find the ideal laptop based on their individual needs, preferences, and budget. The application mimics a chatbot-like interface, allowing users to describe their requirements in natural language (e.g., "I want a laptop for gaming under ₹70,000"), and then returns tailored recommendations using a rule-based engine.
+
+Built with Python (Flask) for the backend and a clean HTML/CSS/JavaScript frontend, LaptopGPT is modular and scalable, with plans to integrate advanced natural language processing via LangChain or Dialogflow, and machine learning models for personalized suggestions in the future.
+
+Whether you're a student, gamer, or working professional, LaptopGPT simplifies the laptop-buying experience by turning specifications into simple conversations.
+
+
 
 ---
 
