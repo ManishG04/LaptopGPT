@@ -24,4 +24,4 @@ Whether you're a student, gamer, or working professional, LaptopGPT simplifies t
 - **Frontend**: HTML, CSS, JavaScript
 - **Backend**: Python (Flask)
 - **Package Manager**: [Poetry](https://python-poetry.org/)
-- **Planned Tools**: LangChain, OpenAI, Dialogflow, ML models
+- **Generative AI**: LangChain, OpenAI
